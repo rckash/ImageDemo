@@ -4,16 +4,18 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.net.Uri
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.provider.MediaStore
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.example.imagedemo.databinding.ActivityMainBinding
+import android.Manifest
+import com.bumptech.glide.Glide
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
@@ -31,7 +33,11 @@ class MainActivity : AppCompatActivity() {
             if (result.resultCode == RESULT_OK) {
                 val bitmap = (result.data?.extras?.get("data") as? Bitmap)
                     ?: return@registerForActivityResult
-                binding.imageView.setImageBitmap(bitmap)
+                Glide.with(this)
+                    .load(bitmap)
+                    .centerCrop()
+                    .circleCrop()
+                    .into(binding.imageView)
             }
         }
 
@@ -40,7 +46,11 @@ class MainActivity : AppCompatActivity() {
         ) { uri: Uri? ->
             if (uri != null) {
                 val bitmap = MediaStore.Images.Media.getBitmap(contentResolver, uri)
-                binding.imageView.setImageBitmap(bitmap)
+                Glide.with(this)
+                    .load(bitmap)
+                    .centerCrop()
+                    .circleCrop()
+                    .into(binding.imageView)
             }
         }
         
@@ -60,12 +70,26 @@ class MainActivity : AppCompatActivity() {
                 val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
                 startActivityLauncher.launch(intent)
             }
+            dialog.dismiss()
         }
         dialogBuilder.setNegativeButton("Gallery") { dialog, _ ->
-
+            galleryLauncher.launch("image/*")
+            dialog.dismiss()
         }
 
         val dialog = dialogBuilder.create()
         dialog.show()
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == 100 && grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+            startActivityLauncher.launch(intent)
+        }
     }
 }
